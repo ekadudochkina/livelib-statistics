@@ -1,22 +1,22 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {Link, useNavigate} from 'react-router-dom'
 import {v4 as uuid} from 'uuid';
 import useCreateDate from '../components/useCreateDate';
+import {NotesContext} from "../App";
 
-function CreateNote({setNotes}) {
+function CreateNote() {
     const [title, setTitle] = React.useState('');
     const [details, setDetails] = React.useState('');
     const date = useCreateDate();
     const navigate = useNavigate();
-
+    const context = useContext(NotesContext);
     const handleSubmit = (e) => {
         e.preventDefault();
 
         if (title && details) {
             const note = {id: uuid(), title: title, details: details, date: date};
-            setNotes(prevNotes => [note, ...prevNotes]);
-
-            navigate('/')
+            context.setNotes([note, ...context.notes]);
+            navigate('/notes')
         }
     }
 
