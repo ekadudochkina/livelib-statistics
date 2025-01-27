@@ -1,5 +1,4 @@
 const Cheerio = require('cheerio');
-
 const BASE_URL = 'https://www.livelib.ru';
 
 
@@ -8,35 +7,85 @@ exports.getData =  (userName, pageName) => {
     const options = {
         method: 'GET',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         }
     };
     let url = BASE_URL + '/reader/' + userName + '/' + pageName + '/listview/biglist';
 
-    return fetch(url, options)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(htmlContent => {
+    async function paginated_fetch(
+        url, options,
+        page = 1
+    ) {
+        try {
+            const response = await fetch(url, options);
+            let htmlContent = await response.text();
+            let bookArray = [];
+            // console.log(htmlContent);
+
             console.log('Get html');
             let currentDate = undefined
             let $ = Cheerio.load(htmlContent, null, false)
-            const bookArray = []
+
+
             $(".book-item-manage").each(function (i, node) {
                 let book = parseToBook($, node, currentDate);
                 bookArray.push(book);
             });
 
+            if ($("#a-list-page-next-"+page).length > 0) {
+                page++;
+                url = BASE_URL + '/reader/' + userName + '/' + pageName + '/listview/biglist/~'+page;
+
+                let temp_data = await paginated_fetch(url, options, page);
+                bookArray = bookArray.concat(temp_data);
+            }
+
 
             return bookArray;
 
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-        });
+
+        } catch (err) {
+            return console.error(err);
+        }
+    }
+
+
+    return paginated_fetch(url, options).then(data => {
+        return data;
+    });
+
+
+
+
+
+
+
+    // return fetch(url, options)
+    //     .then(response => {
+    //         if (!response.ok) {
+    //             throw new Error('Network response was not ok');
+    //         }
+    //         return response.text();
+    //     })
+    //     .then(htmlContent => {
+    //         console.log('Get html');
+    //         let currentDate = undefined
+    //         let $ = Cheerio.load(htmlContent, null, false)
+    //         const bookArray = []
+    //         $(".book-item-manage").each(function (i, node) {
+    //             let book = parseToBook($, node, currentDate);
+    //             bookArray.push(book);
+    //         });
+    //
+    //
+    //         return bookArray;
+    //
+    //     })
+    //     .catch(error => {
+    //         console.error('Fetch error:', error);
+    //     });
+
 };
 
 
